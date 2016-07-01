@@ -7,6 +7,7 @@ require 'json'
 configValues = {
   # box
   "box" => "centos/7",
+  "vm_name" => "Dev-NodeJS",
   "hostname" => "Dev.NodeJS"
 }
 
@@ -16,6 +17,7 @@ Vagrant.configure(2) do |config|
   config.vm.box_check_update = false
   config.vm.provider "virtualbox" do |vb|
     vb.gui = false
+    vb.name = configValues["vm_name"]
     vb.customize [
       "setextradata",
       :id,
@@ -27,7 +29,7 @@ Vagrant.configure(2) do |config|
   config.vm.provision :shell, :path => "shell/install-puppet.sh"
   config.vm.provision :shell, :path => "shell/install-librarian-puppet.sh"
   config.vm.provision :puppet do |puppet|
-    puppet.manifests_path = "puppet/manifests"
+    puppet.manifests_path = "DevArea/puppet/manifests"
     puppet.manifest_file = "default.pp"
   end
 end
