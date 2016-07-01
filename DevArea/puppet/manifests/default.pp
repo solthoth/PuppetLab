@@ -31,3 +31,14 @@ class { 'install_packages':
 file { '/etc/default/locale':
   content => "LANG=\"en_US.UTF-8\"\nLC_ALL=\"en_US.UTF-8\"\n"
 }
+
+# -- NodeJS -- #
+file { '/usr/bin/node':
+  ensure => 'link',
+  target => "/usr/bin/nodejs"
+}
+
+# -- MySQL -- #
+class { '::mysql::server':
+  root_password => 'foo'
+}
