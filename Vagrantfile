@@ -1,17 +1,6 @@
 # -*- mode: ruby -*-
 # vi: set ft=ruby :
 
-PUPPET_SETUP = <<SCRIPT
-  echo "### Install initial packages"
-  yum install -y ruby ruby-libs ruby-shadow git nano
-
-  echo "### Setup Puppet EPEL repository"
-  rpm -Uvh http://download.fedora.redhat.com/pub/epel/5/i386/epel-release-5-3.noarch.rpm
-
-  echo "### Install Puppet"
-  yum install -y puppet puppet-server facter
-SCRIPT
-
 Vagrant.configure(2) do |config|
   config.hostmanager.enabled = true
   config.hostmanager.ignore_private_ip = false
@@ -22,8 +11,8 @@ Vagrant.configure(2) do |config|
       v.memory = 2048
     end
     puppet.vm.synced_folder ".", "/vagrant"
-    puppet.vm.synced_folder "../code", "/puppet_code"
-    puppet.vm.synced_folder "../puppetserver", "/puppet_puppetserver"
+    puppet.vm.synced_folder "./code", "/puppet_code"
+    puppet.vm.synced_folder "./puppetserver", "/puppet_puppetserver"
     puppet.vm.box = "boxcutter/centos72"
     puppet.vm.hostname = "puppet.example.com"
     puppet.vm.network :private_network, ip: "10.0.20.10"
@@ -45,9 +34,9 @@ Vagrant.configure(2) do |config|
   config.vm.define "webserver" do |webserver|
     # Puppet agent on Windows 2012
     webserver.vm.box = "devopsguys/Windows2012R2Eval"
-    webserver.vm.hostname = "agent3"
+    webserver.vm.hostname = "webserver"
     webserver.vm.network :private_network, ip: "10.0.20.13"
-    webserver.hostmanager.aliases = %w(agent3)
+    webserver.hostmanager.aliases = %w(webserver)
     webserver.vm.provision "shell", :path => "windows.ps1"
   end
 end
