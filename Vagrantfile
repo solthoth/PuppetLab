@@ -1,17 +1,6 @@
 # -*- mode: ruby -*-
 # vi: set ft=ruby :
 
-require 'json'
-
-# Config Values #
-configValues = {
-  # box
-  #"box" => "centos/7",
-  "box" => "puppetlabs/centos-7.0-64-puppet",
-  "vm_name" => "Dev-Master",
-  "hostname" => "puppetmaster"
-}
-
 PUPPET_SETUP = <<SCRIPT
   echo "### Install initial packages"
   yum install -y ruby ruby-libs ruby-shadow git nano
@@ -24,18 +13,41 @@ PUPPET_SETUP = <<SCRIPT
 SCRIPT
 
 Vagrant.configure(2) do |config|
-  #config.vm.box_check_update = true
-  config.vm.box = configValues["box"]
-  config.vm.hostname = configValues["hostname"]
-  #config.vm.synced_folder ".", "/vagrant", type: "virtualbox"
-  #config.ssh.forward_agent = true
-  config.ssh.insert_key = false
-  config.vm.network "private_network", ip: "172.31.0.101"
-  config.vm.provider "virtualbox" do |vb|
-    vb.name = configValues["vm_name"]
-    vb.gui = false
-    vb.memory = 4096
-    vb.cpus = 2
+  config.hostmanager.enabled = true
+  config.hostmanager.ignore_private_ip = false
+  config.hostmanager.include_offline = true
+
+  config.vm.define "puppet" do |puppet|
+    config.vm.provider "virtualbox" do |v|
+      v.memory = 2048
+    end
+    puppet.vm.synced_folder ".", "/vagrant"
+    puppet.vm.synced_folder "../code", "/puppet_code"
+    puppet.vm.synced_folder "../puppetserver", "/puppet_puppetserver"
+    puppet.vm.box = "boxcutter/centos72"
+    puppet.vm.hostname = "puppet.example.com"
+    puppet.vm.network :private_network, ip: "10.0.20.10"
+    puppet.hostmanager.aliases = %w(puppet)
+    puppet.vm.provision "shell", inline: <<-SHELL
+      # sudo yum update -y
+      sudo rpm -ivh https://yum.puppetlabs.com/puppetlabs-release-pc1-el-7.noarch.rpm
+      sudo yum install puppetserver -y
+      sudo rm -rf /etc/puppetlabs/code
+      sudo ln -s /puppet_code /etc/puppetlabs/code
+      sudo rm -rf /etc/puppetlabs/puppetserver
+      sudo ln -s /puppet_puppetserver /etc/puppetlabs/puppetserver
+      sudo sed -i 's/2g/512m/g' /etc/sysconfig/puppetserver
+      echo "*.example.com" | sudo tee /etc/puppetlabs/puppet/autosign.conf
+      sudo service puppetserver start
+    SHELL
   end
-  #config.vm.provision :shell, inline: PUPPET_SETUP, privileged: false
+
+  config.vm.define "webserver" do |webserver|
+    # Puppet agent on Windows 2012
+    webserver.vm.box = "devopsguys/Windows2012R2Eval"
+    webserver.vm.hostname = "agent3"
+    webserver.vm.network :private_network, ip: "10.0.20.13"
+    webserver.hostmanager.aliases = %w(agent3)
+    webserver.vm.provision "shell", :path => "windows.ps1"
+  end
 end
